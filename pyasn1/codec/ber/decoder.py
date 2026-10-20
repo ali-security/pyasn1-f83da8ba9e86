@@ -36,6 +36,7 @@ SubstrateUnderrunError = error.SubstrateUnderrunError
 # Maximum number of continuation octets (high-bit set) allowed per OID arc.
 # 20 octets allows up to 140-bit integers, supporting UUID-based OIDs
 MAX_OID_ARC_CONTINUATION_OCTETS = 20
+MAX_NESTING_DEPTH = 100
 
 
 class AbstractPayloadDecoder(object):
@@ -1564,6 +1565,15 @@ class SingleItemDecoder(object):
                  tagSet=None, length=None, state=stDecodeTag,
                  decodeFun=None, substrateFun=None,
                  **options):
+
+        _nestingLevel = options.get('_nestingLevel', 0)
+
+        if _nestingLevel > MAX_NESTING_DEPTH:
+            raise error.PyAsn1Error(
+                'ASN.1 structure nesting depth exceeds limit (%d)' % MAX_NESTING_DEPTH
+            )
+
+        options['_nestingLevel'] = _nestingLevel + 1
 
         allowEoo = options.pop('allowEoo', False)
 
