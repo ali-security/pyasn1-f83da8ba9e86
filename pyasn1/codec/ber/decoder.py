@@ -36,6 +36,10 @@ SubstrateUnderrunError = error.SubstrateUnderrunError
 # Maximum number of continuation octets (high-bit set) allowed per OID arc.
 # 20 octets allows up to 140-bit integers, supporting UUID-based OIDs
 MAX_OID_ARC_CONTINUATION_OCTETS = 20
+
+# Maximum number of octets in a long-form tag ID (20 octets = up to
+# 140-bit tag IDs, matching the OID arc limit)
+MAX_TAG_OCTETS = 20
 MAX_NESTING_DEPTH = 100
 
 
@@ -1630,7 +1634,7 @@ class SingleItemDecoder(object):
 
                     if tagId == 0x1F:
                         isShortTag = False
-                        lengthOctetIdx = 0
+                        tagOctetCount = 0
                         tagId = 0
 
                         while True:
@@ -1644,7 +1648,12 @@ class SingleItemDecoder(object):
                                 )
 
                             integerTag = ord(integerByte)
-                            lengthOctetIdx += 1
+                            tagOctetCount += 1
+                            if tagOctetCount > MAX_TAG_OCTETS:
+                                raise error.PyAsn1Error(
+                                    'Tag ID octet count exceeds limit (%d)' % (
+                                        MAX_TAG_OCTETS,)
+                                )
                             tagId <<= 7
                             tagId |= (integerTag & 0x7F)
 
